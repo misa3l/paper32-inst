@@ -161,6 +161,31 @@ app.get('/admin/debug', (req, res) => {
   res.json(instructions);
 });
 
+app.post('/admin/broadcast', (req, res) => {
+  if (!req.headers.authorization) {
+    // Not authorized
+    res.status(401);
+    res.end('Error 401');
+    return;
+  }
+  if (req.headers.authorization !== adminkey) {
+    // Not authorized
+    res.status(401);
+    res.end('Error 401');
+    return;
+  }
+  if (!req.body.it) {
+    res.status(403);
+    res.end('Forbidden, please add a valid JSON body');
+    return;
+  }
+  Object.keys(instructions).forEach(key => {
+    instructions[key].arr.push(JSON.parse(JSON.stringify(req.body)));
+  });
+  res.status(200);
+  res.end();
+});
+
 // ADMIN END ENDPOINTS -- END
 
 app.use((req, res) => {
