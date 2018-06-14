@@ -4,13 +4,27 @@
     SEE LICENSE FOR COPYRIGHT */
 
 
+const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = new express();
 
 
-const adminkey = 'adminkey';
-const userkey = 'azertyuiop';
+let config = {};
+if (!fs.existsSync('./config.json')) {
+  config.adminkey = 'adminkey';
+  config.userkey = 'azertyuiop';
+  fs.writeFileSync('./config.json', JSON.stringify(config));
+  console.warn('Please configure the newly created config.json');
+  process.exit(0);
+}
+else {
+  config = JSON.parse(fs.readFileSync('./config.json'));
+  if (!config.adminkey || !config.userkey) {
+    console.error('Invalid configuration file');
+    process.exit(0);
+  }
+}
 
 
 // Body parser things
@@ -47,7 +61,7 @@ app.get('/users/:mac/last', (req, res) => {
     res.end('Error 401');
     return;
   }
-  if (req.headers.authorization !== userkey && req.headers.authorization !== adminkey) {
+  if (req.headers.authorization !== config.userkey && req.headers.authorization !== config.adminkey) {
     // Not authorized
     res.status(401);
     res.end('Error 401');
@@ -65,20 +79,11 @@ app.get('/users/:mac/last', (req, res) => {
     res.end('no-entry');
     return;
   }
-  //Building instructions, maybe change how it works to use CRLF
   let r = '';
-  if (instructions[req.params.mac].arr[0].it) {
-    r += 'Instruction-Type: ' + instructions[req.params.mac].arr[0].it + ';;;;';
-  }
-  if (instructions[req.params.mac].arr[0].source) {
-    r += 'Source: ' + instructions[req.params.mac].arr[0].source + ';;;;';
-  }
-  if (instructions[req.params.mac].arr[0].dest) {
-    r += 'Destination: ' + instructions[req.params.mac].arr[0].dest + ';;;;';
-  }
-  if (instructions[req.params.mac].arr[0].command) {
-    r += 'Command: ' + instructions[req.params.mac].arr[0].command + ';;;;';
-  }
+  Object.keys(instructions[req.params.mac].arr[0]).forEach(key => {
+    r += key + ': ' + instructions[req.params.mac].arr[0][key] + ';;;;';
+  });
+  console.log(r);
   res.status(200);
   res.end(r);
 });
@@ -90,7 +95,7 @@ app.delete('/users/:mac/done', (req, res) => {
     res.end('Error 401');
     return;
   }
-  if (req.headers.authorization !== userkey && req.headers.authorization !== adminkey) {
+  if (req.headers.authorization !== config.userkey && req.headers.authorization !== config.adminkey) {
     // Not authorized
     res.status(401);
     res.end('Error 401');
@@ -126,15 +131,10 @@ app.post('/users/:mac/admin/add', (req, res) => {
     res.end('Error 401');
     return;
   }
-  if (req.headers.authorization !== adminkey) {
+  if (req.headers.authorization !== config.adminkey) {
     // Not authorized
     res.status(401);
     res.end('Error 401');
-    return;
-  }
-  if (!req.body.it) {
-    res.status(403);
-    res.end('Forbidden, please add a valid JSON body');
     return;
   }
   if (!instructions[req.params.mac]) {
@@ -156,7 +156,7 @@ app.get('/admin/debug', (req, res) => {
     res.end('Error 401');
     return;
   }
-  if (req.headers.authorization !== adminkey) {
+  if (req.headers.authorization !== config.adminkey) {
     // Not authorized
     res.status(401);
     res.end('Error 401');
@@ -172,15 +172,10 @@ app.post('/admin/broadcast', (req, res) => {
     res.end('Error 401');
     return;
   }
-  if (req.headers.authorization !== adminkey) {
+  if (req.headers.authorization !== config.adminkey) {
     // Not authorized
     res.status(401);
     res.end('Error 401');
-    return;
-  }
-  if (!req.body.it) {
-    res.status(403);
-    res.end('Forbidden, please add a valid JSON body');
     return;
   }
   Object.keys(instructions).forEach(key => {
