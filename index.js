@@ -19,6 +19,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 let instructions = {};
 
+// STATIC SERVING
+
+app.use('/static', express.static('./static'));
+
 // USER END ENDPOINTS -- BEGIN
 
 app.trace('/users/:mac/trace/:user/:version/do', (req, res) => {
